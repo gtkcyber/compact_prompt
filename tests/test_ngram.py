@@ -41,7 +41,10 @@ def test_savings_guard_skips_non_beneficial():
 
 
 def test_abbreviation_shortens_text():
-    abbr = NgramAbbreviator(n=2, top_k=50).compress(REPETITIVE)
+    # A repeated trigram ("operating cash flow") costs more tokens than its
+    # placeholder under any tokenizer, so abbreviation must shorten the text.
+    abbr = NgramAbbreviator(n=3, top_k=50).compress(REPETITIVE)
+    assert "operating cash flow" in abbr.dictionary.values()
     assert len(abbr.text) < len(REPETITIVE)
 
 

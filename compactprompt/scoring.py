@@ -21,7 +21,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
 
@@ -129,6 +129,7 @@ class LocalLMScorer:
         self._device = device
         self._tokenizer = None
         self._model = None
+        self._torch = None
 
     def _ensure_loaded(self) -> None:
         if self._model is not None:

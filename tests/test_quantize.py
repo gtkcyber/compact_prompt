@@ -1,7 +1,5 @@
 """Tests for Numerical Quantization."""
 
-import math
-
 import pytest
 
 from compactprompt import QuantizedColumn, quantize, quantize_uniform

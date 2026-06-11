@@ -134,7 +134,7 @@ class HardPromptCompressor:
         nlp = self._load_spacy() if self.use_phrases else None
         if nlp is not None and "parser" in getattr(nlp, "pipe_names", []):
             return self._phrase_units(text, nlp, static, surprisals)
-        return self._token_units(text, nlp, static, surprisals)
+        return self._token_units(text, static, surprisals)
 
     def _score_words(self, words, static, surprisals):
         spans = [(w_start, w_end) for (_t, w_start, w_end) in words]
@@ -146,7 +146,7 @@ class HardPromptCompressor:
             scores.append(s)
         return scores
 
-    def _token_units(self, text, nlp, static, surprisals) -> List[Unit]:
+    def _token_units(self, text, static, surprisals) -> List[Unit]:
         words: List[Tuple[str, int, int]] = []
         units_raw: List[Tuple[str, int, int, bool]] = []
         for m in _TOKEN_RE.finditer(text):

@@ -14,7 +14,6 @@ quantization uses scikit-learn (install the ``ml`` extra).
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Iterable, List, Optional, Sequence
 
@@ -168,7 +167,7 @@ def quantize_dataframe(
         values and ``results`` maps column name -> :class:`QuantizedColumn`.
     """
     try:
-        import pandas as pd  # noqa: F401
+        import pandas  # noqa: F401  # pylint: disable=unused-import
     except Exception as exc:
         raise ImportError("quantize_dataframe needs pandas.") from exc
 

@@ -49,3 +49,42 @@ dev = ["pytest>=7.4"]
 
 [tool.setuptools.packages.find]
 include = ["compactprompt*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.pylint.main]
+# Optional heavy dependencies are imported lazily; pylint can't always resolve
+# them and that's fine — they are genuinely optional at runtime.
+ignored-modules = [
+    "torch",
+    "transformers",
+    "spacy",
+    "sklearn",
+    "sentence_transformers",
+    "wordfreq",
+    "tiktoken",
+    "numpy",
+    "pandas",
+    "pytest",
+]
+
+[tool.pylint.basic]
+# Short names that are idiomatic in numeric / ML code.
+good-names = ["X", "i", "j", "k", "n", "e", "s", "a", "b", "c", "q", "lo", "hi", "df", "ph", "_"]
+
+[tool.pylint."messages control"]
+disable = [
+    # Lazy/optional imports are a deliberate design choice (cheap top-level import).
+    "import-outside-toplevel",
+    # Optional-dependency probes and model loads legitimately catch broadly.
+    "broad-exception-caught",
+    # Configurable, fully-documented public APIs intentionally take many options.
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-few-public-methods",
+    # Tests are self-describing; docstrings add noise without value there.
+    "missing-function-docstring",
+]
