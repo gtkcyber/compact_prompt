@@ -1,4 +1,6 @@
-# compactprompt
+# CompactPrompt
+
+[![Tests](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml)
 
 Easy-to-use **prompt & data compression** for LLM workflows — a clean, faithful
 implementation of the four strategies from
