@@ -1,0 +1,101 @@
+name: Publish to PyPI
+
+# Publishes the package when you cut a GitHub Release. Uses PyPI Trusted
+# Publishing (OIDC) — no API tokens or secrets to manage.
+#
+# ONE-TIME SETUP (https://docs.pypi.org/trusted-publishers/):
+#   1. Register the project name on PyPI (or let the first trusted-publish
+#      create it via "pending" publisher).
+#   2. On PyPI → project → Settings → Publishing, add a GitHub trusted publisher:
+#        Owner:       <your-github-org-or-user>
+#        Repository:  compact_prompt
+#        Workflow:    publish.yml
+#        Environment: pypi
+#   3. In this GitHub repo → Settings → Environments, create an environment
+#      named "pypi" (optionally add required reviewers to gate releases).
+#
+# To release:  bump `version` in pyproject.toml, commit, then create a GitHub
+# Release whose tag matches (e.g. v0.1.0). PyPI rejects re-uploads of an
+# existing version, so always bump first.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:        # allow manual TestPyPI dry-runs (see publish-testpypi)
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history + tags so setuptools-scm sees the version
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Verify package metadata
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
+
+      - name: Upload built distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # Only the real Release event publishes to PyPI.
+    if: github.event_name == 'release'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/compactprompt
+    permissions:
+      id-token: write        # required for trusted publishing
+    steps:
+      - name: Download built distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-testpypi:
+    name: Publish to TestPyPI (manual dry-run)
+    needs: build
+    runs-on: ubuntu-latest
+    # Manual runs go to TestPyPI so you can rehearse a release safely.
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/compactprompt
+    permissions:
+      id-token: write
+    steps:
+      - name: Download built distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

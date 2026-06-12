@@ -55,6 +55,20 @@ For phrase-level pruning also download a spaCy model once:
 python -m spacy download en_core_web_sm
 ```
 
+## Interactive demo
+
+A tiny Streamlit app lets you paste a prompt and watch it compact in real time,
+with live token-savings metrics:
+
+```bash
+pip install 'compactprompt[app]'
+streamlit run streamlit_app.py
+```
+
+The sidebar toggles each strategy (pruning aggressiveness, phrase preservation,
+context-aware scoring, reversible abbreviation, fidelity measurement); controls
+for unavailable optional dependencies are disabled with a hint to install them.
+
 ## The four strategies
 
 ### 1. Hard Prompt Compression (lossy)

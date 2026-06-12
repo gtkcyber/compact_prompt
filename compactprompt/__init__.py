@@ -25,6 +25,8 @@ lazily, only when a strategy that needs them is used. The headline
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .embedding import get_embedder
 from .examples import SelectionResult, select_examples
 from .fidelity import FidelityResult, cosine_fidelity
@@ -46,7 +48,10 @@ from .scoring import (
 )
 from .tokens import count_tokens
 
-__version__ = "0.1.0"
+try:
+    __version__ = version("compactprompt")
+except PackageNotFoundError:  # running from a source tree that isn't installed
+    __version__ = "0.0.0+unknown"
 
 # --- convenience top-level functions ---------------------------------------
 
