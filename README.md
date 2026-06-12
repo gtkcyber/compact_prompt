@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml)
 [![Pylint](https://github.com/gtkcyber/compact_prompt/actions/workflows/pylint.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/pylint.yml)
-[![Documentation Status](https://readthedocs.org/projects/compactprompt/badge/?version=latest)](https://compactprompt.readthedocs.io/en/latest/)
+[![Documentation Status](https://readthedocs.org/projects/compact-prompt/badge/?version=latest)](https://compact-prompt.readthedocs.io/en/latest/)
 
 **CompactPrompt makes the text you send to an AI shorter — without losing the
 meaning — so it costs less, runs faster, and fits inside the AI's size limit.**
@@ -266,7 +266,7 @@ CompactPrompt.compact(
 ```
 
 Full details — including the advanced options — are in the
-[documentation](https://compactprompt.readthedocs.io/).
+[documentation](https://compact-prompt.readthedocs.io/).
 
 ---
 

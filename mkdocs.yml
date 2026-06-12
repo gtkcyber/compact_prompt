@@ -1,6 +1,6 @@
 site_name: CompactPrompt
 site_description: Make the text you send to an AI shorter — without losing the meaning.
-site_url: https://compactprompt.readthedocs.io/
+site_url: https://compact-prompt.readthedocs.io/
 repo_url: https://github.com/gtkcyber/compact_prompt
 repo_name: gtkcyber/compact_prompt
 
