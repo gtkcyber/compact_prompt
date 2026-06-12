@@ -30,7 +30,9 @@ from importlib.metadata import PackageNotFoundError, version
 from .embedding import get_embedder
 from .examples import SelectionResult, select_examples
 from .fidelity import FidelityResult, cosine_fidelity
+from .caveman import CavemanCompressor
 from .hard_prompt import HardPromptCompressor, HardPromptResult
+from .llmlingua import LLMLinguaCompressor
 from .ngram import Abbreviation, NgramAbbreviator
 from .pipeline import CompactPrompt, CompactResult
 from .quantize import (
@@ -80,6 +82,8 @@ __all__ = [
     # hard prompt
     "HardPromptCompressor",
     "HardPromptResult",
+    "LLMLinguaCompressor",
+    "CavemanCompressor",
     # n-gram
     "NgramAbbreviator",
     "Abbreviation",

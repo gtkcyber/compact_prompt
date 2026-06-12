@@ -46,6 +46,8 @@ pip install 'compactprompt[dynamic]'       # context-aware scoring (torch + tran
 pip install 'compactprompt[phrases]'       # grammar-preserving pruning (spaCy)
 pip install 'compactprompt[ml]'            # k-means quantization + exemplar selection
 pip install 'compactprompt[embeddings]'    # semantic embeddings (all-mpnet-base-v2)
+pip install 'compactprompt[llmlingua]'     # LLMLingua as an alternative pruning engine
+pip install 'compactprompt[caveman]'       # caveman LLM-based compression engine
 pip install 'compactprompt[all]'           # everything, faithful to the paper
 ```
 
@@ -98,6 +100,52 @@ from compactprompt import CompactPrompt, LocalLMScorer
 r = CompactPrompt.compact(prompt, scorer=LocalLMScorer("gpt2"))   # offline, no API key
 ```
 
+#### Swappable pruning engine: built-in or LLMLingua
+
+The pruning engine is pluggable. As well as the built-in self-information
+pruner, you can prune with Microsoft's
+[LLMLingua](https://github.com/microsoft/LLMLingua) (a mature, perplexity-based
+compressor) — it slots in as a drop-in engine:
+
+```python
+from compactprompt import CompactPrompt
+
+# Shortcut: use LLMLingua with sensible defaults (LLMLingua-2, CPU)
+r = CompactPrompt.compact(prompt, engine="llmlingua")   # needs the [llmlingua] extra
+
+# Or configure it explicitly and reuse the loaded model across prompts
+from compactprompt.llmlingua import LLMLinguaCompressor
+
+pruner = LLMLinguaCompressor(device_map="cuda")          # pick model / device
+r = CompactPrompt.compact(prompt, pruner=pruner)
+```
+
+`ratio` and `budget` map onto LLMLingua's `rate`/`target_token`, and the result
+is the same `CompactResult`, so the rest of your code is unchanged. Any object
+exposing `compress(text, ratio=, budget=) -> HardPromptResult` works as an
+engine — see the [comparison of the engines](#pruning-engines-built-in-llmlingua-caveman)
+below.
+
+A third engine, **caveman**, takes a different approach: it asks an LLM to
+rewrite prose into terse "caveman speak" while preserving code, URLs, and
+headings verbatim (validated, with a fix-retry loop). It's a port of the
+[Caveman](https://github.com/JuliusBrussee/caveman) `caveman-compress` skill,
+with a pluggable LLM:
+
+```python
+from compactprompt import CompactPrompt
+from compactprompt.caveman import CavemanCompressor
+
+# Bring any LLM: a callable that takes a prompt string and returns a string.
+r = CompactPrompt.compact(prompt, pruner=CavemanCompressor(llm=my_llm))
+
+# Shortcut (default LLM = Anthropic SDK if ANTHROPIC_API_KEY is set, else `claude` CLI):
+r = CompactPrompt.compact(prompt, engine="caveman")    # needs the [caveman] extra
+```
+
+Because it rewrites rather than drops tokens, `ratio`/`budget` are ignored by
+the caveman engine.
+
 ### 2. Textual N-gram Abbreviation (lossless / reversible)
 
 Replaces frequent multi-word patterns with short, token-cheap placeholders, and
@@ -148,6 +196,23 @@ sel = select_examples(candidate_texts, k_range=(5, 50))
 few_shot = sel.examples       # the chosen prototypes
 sel.k_star                    # selected number of clusters
 ```
+
+## Pruning engines: built-in, LLMLingua, caveman
+
+All three reduce prompt text, but differently — and any of them slots into
+`CompactPrompt.compact(engine=...)` or `pruner=`:
+
+| | Built-in | LLMLingua | caveman |
+|---|---|---|---|
+| Method | Static+dynamic self-information (Δ=0.1) + phrase pruning | Perplexity / token-classification (LLMLingua-2) | LLM rewrites prose into terse "caveman" style |
+| Needs | Zero-dep core; LM scorer optional | Downloads a compressor model | An LLM (pluggable; Anthropic/`claude` by default) |
+| Strengths | Grammar-preserving, lightweight, pluggable scorer | Mature, benchmarked, query-aware | Highest prose reduction; preserves code/URLs/headings (validated) |
+| Token target | `ratio`/`budget` honored | `ratio`/`budget` honored | rewrites to its own degree (`ratio`/`budget` ignored) |
+| Reversible | No (use n-gram abbreviation) | No | No |
+
+They compose: pick whichever engine fits the prose, and still use this
+library's reversible n-gram abbreviation, numeric quantization, and few-shot
+selection on the data-heavy parts.
 
 ## Measuring fidelity
 

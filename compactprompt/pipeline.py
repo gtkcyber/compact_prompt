@@ -94,6 +94,12 @@ class CompactPrompt:
         spacy_model: spaCy model name.
         ngram: N-gram length for abbreviation (paper best: 2).
         top_k: Number of frequent n-grams to abbreviate.
+        pruner: Custom pruning engine exposing
+            ``compress(text, ratio=, budget=) -> HardPromptResult``. Defaults to
+            the built-in :class:`~compactprompt.hard_prompt.HardPromptCompressor`.
+            Pass a :class:`~compactprompt.llmlingua.LLMLinguaCompressor` to prune
+            with LLMLingua instead. When supplied, the scorer/static/phrase
+            options above are ignored (they configure the built-in engine).
     """
 
     def __init__(
@@ -105,8 +111,9 @@ class CompactPrompt:
         spacy_model: str = "en_core_web_sm",
         ngram: int = 2,
         top_k: int = 100,
+        pruner=None,
     ):
-        self.hard = HardPromptCompressor(
+        self.hard = pruner or HardPromptCompressor(
             scorer=scorer,
             static=static,
             delta_threshold=delta_threshold,
@@ -186,6 +193,8 @@ class CompactPrompt:
         delta_threshold: float = 0.1,
         use_phrases: bool = True,
         spacy_model: str = "en_core_web_sm",
+        engine: str = "builtin",
+        pruner=None,
     ) -> CompactResult:
         """Compress a prompt. **The main entry point.**
 
@@ -211,6 +220,13 @@ class CompactPrompt:
             delta_threshold: Static/dynamic fusion threshold (paper default 0.1).
             use_phrases: Preserve grammar by pruning whole phrases (needs spaCy).
             spacy_model: spaCy model name for phrase parsing.
+            engine: Pruning engine. ``"builtin"`` (default) uses this library's
+                self-information pruner; ``"llmlingua"`` uses LLMLingua with
+                default settings (needs the ``llmlingua`` extra); ``"caveman"``
+                uses LLM-based caveman-style compression (needs an LLM — see
+                :class:`~compactprompt.caveman.CavemanCompressor`).
+            pruner: An explicit pruning engine instance (overrides ``engine``).
+                See :class:`~compactprompt.llmlingua.LLMLinguaCompressor`.
 
         Returns:
             A :class:`CompactResult`. ``result.text`` is the compressed prompt;
@@ -222,7 +238,18 @@ class CompactPrompt:
             >>> r.text            # doctest: +SKIP
             >>> r.ratio           # doctest: +SKIP
         """
-        engine = cls(
+        if pruner is None and engine == "llmlingua":
+            from .llmlingua import LLMLinguaCompressor
+
+            pruner = LLMLinguaCompressor()
+        elif pruner is None and engine == "caveman":
+            from .caveman import CavemanCompressor
+
+            pruner = CavemanCompressor()
+        elif engine not in ("builtin", "llmlingua", "caveman"):
+            raise ValueError("engine must be 'builtin', 'llmlingua', or 'caveman'")
+
+        compactor = cls(
             scorer=scorer,
             static=static,
             delta_threshold=delta_threshold,
@@ -230,8 +257,9 @@ class CompactPrompt:
             spacy_model=spacy_model,
             ngram=ngram,
             top_k=top_k,
+            pruner=pruner,
         )
-        return engine.run(
+        return compactor.run(
             prompt,
             ratio=ratio,
             budget=budget,

@@ -78,6 +78,17 @@ non-obvious:
    must degrade to static-only scoring when no scorer/spaCy is available rather
    than failing.
 
+   **Swappable pruning engine.** The whole pruner is also replaceable: anything
+   exposing `compress(text, ratio=, budget=) -> HardPromptResult` can be passed
+   as `CompactPrompt(pruner=...)`. Two backends ship: `llmlingua.py` (Microsoft
+   LLMLingua, `engine="llmlingua"`) and `caveman.py` (LLM-based caveman-style
+   rewrite, `engine="caveman"`, ported MIT code from JuliusBrussee/caveman with
+   a *pluggable* `llm` callable and structure-preservation validation). When
+   adding another backend, match that signature and return a `HardPromptResult`
+   with token counts from this library's `count_tokens` (not the backend's
+   tokenizer) for consistency. Note `caveman` rewrites prose, so it ignores
+   `ratio`/`budget` (accepted only for interface compatibility).
+
 3. **`compact()` defaults to prune-only** (`abbreviate=False`). Abbreviated text
    is gibberish to a downstream model without its `dictionary` legend, so
    abbreviation is opt-in and intended for the document-compression case where

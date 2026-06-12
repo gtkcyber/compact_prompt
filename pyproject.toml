@@ -32,6 +32,10 @@ embeddings = ["sentence-transformers>=2.2"]
 tokenizer = ["tiktoken>=0.5"]
 # The interactive Streamlit demo (streamlit_app.py).
 app = ["streamlit>=1.30", "tiktoken>=0.5"]
+# LLMLingua as an alternative perplexity-based pruning engine.
+llmlingua = ["llmlingua>=0.2"]
+# Caveman LLM-based compression engine (default LLM caller uses the Anthropic SDK).
+caveman = ["anthropic>=0.39"]
 # Everything, for a faithful reproduction of the paper.
 all = [
     "wordfreq>=3.0",
@@ -43,6 +47,8 @@ all = [
     "sentence-transformers>=2.2",
     "tiktoken>=0.5",
     "pandas>=2.0",
+    "llmlingua>=0.2",
+    "anthropic>=0.39",
 ]
 dev = ["pytest>=7.4"]
 
@@ -76,6 +82,9 @@ ignored-modules = [
     "numpy",
     "pandas",
     "pytest",
+    "streamlit",
+    "llmlingua",
+    "anthropic",
 ]
 
 [tool.pylint.basic]

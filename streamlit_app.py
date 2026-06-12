@@ -9,6 +9,7 @@ result and token savings side by side.
 """
 
 import importlib
+import shutil
 
 import streamlit as st
 
@@ -39,38 +40,65 @@ def load_scorer(model_name: str) -> LocalLMScorer:
     return instance
 
 
+@st.cache_resource(show_spinner="Loading LLMLingua model (first run downloads it)…")
+def load_llmlingua():
+    """Cache the LLMLingua pruning engine across reruns."""
+    from compactprompt import LLMLinguaCompressor
+
+    engine = LLMLinguaCompressor()
+    engine.load()
+    return engine
+
+
 def sidebar() -> dict:
     """Render the settings sidebar and return the chosen options."""
     has_dynamic = have("torch") and have("transformers")
     has_phrases = have("spacy")
     has_embeddings = have("sentence_transformers")
+    has_llmlingua = have("llmlingua")
+    has_caveman = have("anthropic") or bool(shutil.which("claude"))
 
     with st.sidebar:
         st.header("Settings")
 
         opts = {}
         opts["prune"] = st.checkbox("Hard-prompt pruning (lossy)", value=True)
-        opts["ratio"] = st.slider(
+        engines = ["Built-in"]
+        if has_llmlingua:
+            engines.append("LLMLingua")
+        if has_caveman:
+            engines.append("Caveman")
+        opts["engine"] = st.radio(
+            "Pruning engine",
+            engines,
+            horizontal=True,
+            disabled=not opts["prune"],
+            help="Built-in self-information pruning; Microsoft LLMLingua "
+                 "(perplexity-based); or Caveman (LLM rewrites prose tersely).",
+        )
+        is_rewrite = opts["engine"] in ("LLMLingua", "Caveman")
+        remove_pct = st.slider(
             "Tokens to remove",
-            min_value=0.0,
-            max_value=0.9,
-            value=0.5,
-            step=0.05,
-            format="%.0f%%",
-            help="Target fraction of tokens to drop via pruning.",
+            min_value=0,
+            max_value=90,
+            value=50,
+            step=5,
+            format="%d%%",
+            help="Target percentage of tokens to drop via pruning.",
             disabled=not opts["prune"],
         )
+        opts["ratio"] = remove_pct / 100.0
         opts["use_phrases"] = st.checkbox(
             "Grammar-preserving phrases (spaCy)",
             value=has_phrases,
-            disabled=not has_phrases,
-            help="Prune whole phrases instead of single words. Needs spaCy + a model.",
+            disabled=not has_phrases or is_rewrite,
+            help="Prune whole phrases instead of single words. Built-in engine only.",
         )
         opts["use_dynamic"] = st.checkbox(
             "Context-aware scoring (gpt2)",
             value=False,
-            disabled=not has_dynamic,
-            help="Score tokens with a local language model. Needs the 'dynamic' extra.",
+            disabled=not has_dynamic or is_rewrite,
+            help="Score tokens with a local language model. Built-in engine only.",
         )
 
         st.divider()
@@ -99,6 +127,10 @@ def sidebar() -> dict:
             st.caption("ℹ️ Install `.[phrases]` + `spacy download en_core_web_sm`.")
         if not has_embeddings:
             st.caption("ℹ️ Install `.[embeddings]` to measure fidelity.")
+        if not has_llmlingua:
+            st.caption("ℹ️ Install `.[llmlingua]` to prune with LLMLingua.")
+        if not has_caveman:
+            st.caption("ℹ️ Install `.[caveman]` (or the `claude` CLI) for the Caveman engine.")
     return opts
 
 
@@ -149,7 +181,16 @@ def main() -> None:
     if not st.button("Compact prompt", type="primary", disabled=not prompt.strip()):
         return
 
-    scorer = load_scorer("gpt2") if opts["use_dynamic"] else None
+    engine = opts["engine"]
+    is_rewrite = engine in ("LLMLingua", "Caveman")
+    scorer = load_scorer("gpt2") if (opts["use_dynamic"] and not is_rewrite) else None
+    pruner = None
+    if engine == "LLMLingua":
+        pruner = load_llmlingua()
+    elif engine == "Caveman":
+        from compactprompt import CavemanCompressor
+
+        pruner = CavemanCompressor()
     try:
         result = CompactPrompt.compact(
             prompt,
@@ -160,6 +201,7 @@ def main() -> None:
             top_k=int(opts["top_k"]),
             use_phrases=opts["use_phrases"],
             scorer=scorer,
+            pruner=pruner,
         )
     except Exception as exc:  # pragma: no cover - surface config errors in UI
         st.error(f"Compaction failed: {exc}")

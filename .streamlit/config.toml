@@ -1,0 +1,7 @@
+# Streamlit's source watcher otherwise walks every imported module (including
+# torch / transformers) to decide what to hot-reload. When an optional piece
+# like torchvision isn't installed, that walk prints harmless-but-alarming
+# tracebacks at startup. Disabling the watcher keeps the demo output clean.
+# (Trade-off: edits to streamlit_app.py won't auto-reload; just restart.)
+[server]
+fileWatcherType = "none"
