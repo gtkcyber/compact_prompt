@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Callable, Dict, Optional
 
 from .tokens import count_tokens
 
@@ -70,7 +70,7 @@ class NgramAbbreviator:
         top_k: int = 100,
         min_count: int = 2,
         marker: str = "@",
-        placeholder=None,
+        placeholder: Optional[Callable[[int], str]] = None,
         require_savings: bool = True,
     ):
         if n < 1:

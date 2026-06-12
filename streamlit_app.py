@@ -77,6 +77,7 @@ def sidebar() -> dict:
                  "(perplexity-based); or Caveman (LLM rewrites prose tersely).",
         )
         is_rewrite = opts["engine"] in ("LLMLingua", "Caveman")
+        is_caveman = opts["engine"] == "Caveman"
         remove_pct = st.slider(
             "Tokens to remove",
             min_value=0,
@@ -85,9 +86,11 @@ def sidebar() -> dict:
             step=5,
             format="%d%%",
             help="Target percentage of tokens to drop via pruning.",
-            disabled=not opts["prune"],
+            disabled=not opts["prune"] or is_caveman,
         )
         opts["ratio"] = remove_pct / 100.0
+        if is_caveman:
+            st.caption("🪓 Caveman rewrites prose to its own degree — the ratio is ignored.")
         opts["use_phrases"] = st.checkbox(
             "Grammar-preserving phrases (spaCy)",
             value=has_phrases,
@@ -191,22 +194,31 @@ def main() -> None:
         from compactprompt import CavemanCompressor
 
         pruner = CavemanCompressor()
+    spinner = f"Compressing with {engine}…" if is_rewrite else "Compressing…"
     try:
-        result = CompactPrompt.compact(
-            prompt,
-            ratio=opts["ratio"],
-            prune=opts["prune"],
-            abbreviate=opts["abbreviate"],
-            ngram=opts["ngram"],
-            top_k=int(opts["top_k"]),
-            use_phrases=opts["use_phrases"],
-            scorer=scorer,
-            pruner=pruner,
-        )
+        with st.spinner(spinner):
+            result = CompactPrompt.compact(
+                prompt,
+                ratio=opts["ratio"],
+                prune=opts["prune"],
+                abbreviate=opts["abbreviate"],
+                ngram=opts["ngram"],
+                top_k=int(opts["top_k"]),
+                use_phrases=opts["use_phrases"],
+                scorer=scorer,
+                pruner=pruner,
+            )
     except Exception as exc:  # pragma: no cover - surface config errors in UI
         st.error(f"Compaction failed: {exc}")
         return
 
+    if result.text == result.original:
+        st.warning(
+            f"The {engine} engine returned the prompt unchanged — it may have "
+            "had little to compress, or the LLM declined. Try a longer, more "
+            "verbose prompt."
+        )
+    st.caption(f"Engine: **{engine}**")
     show_results(result, opts["show_fidelity"])
 
 

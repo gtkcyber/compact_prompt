@@ -111,7 +111,7 @@ class CompactPrompt:
         spacy_model: str = "en_core_web_sm",
         ngram: int = 2,
         top_k: int = 100,
-        pruner=None,
+        pruner: Optional[object] = None,
     ):
         self.hard = pruner or HardPromptCompressor(
             scorer=scorer,
@@ -194,7 +194,7 @@ class CompactPrompt:
         use_phrases: bool = True,
         spacy_model: str = "en_core_web_sm",
         engine: str = "builtin",
-        pruner=None,
+        pruner: Optional[object] = None,
     ) -> CompactResult:
         """Compress a prompt. **The main entry point.**
 

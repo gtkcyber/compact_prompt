@@ -43,7 +43,7 @@ class LLMLinguaCompressor:
         use_llmlingua2: Use the LLMLingua-2 token-classification compressor
             (recommended; faster and matches ``DEFAULT_MODEL``).
         device_map: Torch device (``"cpu"``, ``"cuda"``, ...). Defaults to CPU.
-        **compressor_kwargs: Forwarded to ``llmlingua.PromptCompressor``.
+        compressor_kwargs: Forwarded to ``llmlingua.PromptCompressor``.
 
     The underlying model is loaded lazily on first :meth:`compress` call (or via
     :meth:`load`), so constructing this object is cheap and import-safe.
@@ -54,7 +54,7 @@ class LLMLinguaCompressor:
         model_name: str = DEFAULT_MODEL,
         use_llmlingua2: bool = True,
         device_map: str = "cpu",
-        **compressor_kwargs,
+        **compressor_kwargs: object,
     ):
         self.model_name = model_name
         self.use_llmlingua2 = use_llmlingua2
@@ -88,7 +88,7 @@ class LLMLinguaCompressor:
         budget: Optional[int] = None,
         instruction: str = "",
         question: str = "",
-        **compress_kwargs,
+        **compress_kwargs: object,
     ) -> HardPromptResult:
         """Compress ``text`` with LLMLingua, returning a :class:`HardPromptResult`.
 
@@ -99,9 +99,11 @@ class LLMLinguaCompressor:
                 when ``budget`` is set.
             budget: Absolute target token count. Mapped to LLMLingua's
                 ``target_token``.
-            instruction / question: Optional LLMLingua query-aware fields
-                (LLMLingua keeps tokens relevant to these).
-            **compress_kwargs: Forwarded to ``PromptCompressor.compress_prompt``.
+            instruction: Optional LLMLingua query-aware field; LLMLingua keeps
+                tokens relevant to it.
+            question: Optional LLMLingua query-aware field; LLMLingua keeps
+                tokens relevant to it.
+            compress_kwargs: Forwarded to ``PromptCompressor.compress_prompt``.
 
         Returns:
             A :class:`HardPromptResult`. Token counts use this library's

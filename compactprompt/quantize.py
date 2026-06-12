@@ -149,22 +149,25 @@ def quantize(
 
 
 def quantize_dataframe(
-    df,
+    df: "object",
     columns: Optional[Iterable[str]] = None,
     method: str = "uniform",
     bits: int = 8,
     k: int = 16,
-):
+) -> tuple:
     """Quantize numeric columns of a pandas DataFrame in place-safe fashion.
 
     Args:
         df: A pandas DataFrame.
         columns: Columns to quantize; defaults to all numeric columns.
-        method, bits, k: Passed through to :func:`quantize`.
+        method: Quantization method, passed to :func:`quantize`.
+        bits: Bit-width for uniform quantization.
+        k: Number of clusters for k-means quantization.
 
     Returns:
-        ``(new_df, results)`` where ``new_df`` has reconstructed (quantized)
-        values and ``results`` maps column name -> :class:`QuantizedColumn`.
+        A ``(new_df, results)`` tuple where ``new_df`` has reconstructed
+        (quantized) values and ``results`` maps column name to
+        :class:`QuantizedColumn`.
     """
     try:
         import pandas  # noqa: F401  # pylint: disable=unused-import

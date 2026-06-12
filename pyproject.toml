@@ -51,6 +51,12 @@ all = [
     "anthropic>=0.39",
 ]
 dev = ["pytest>=7.4"]
+# Building the documentation site (MkDocs + Material + API autodoc).
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+    "mkdocs-include-markdown-plugin>=6.0",
+]
 
 [project.urls]
 "Paper" = "https://arxiv.org/abs/2510.18043"

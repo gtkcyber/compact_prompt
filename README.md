@@ -2,283 +2,298 @@
 
 [![Tests](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml)
 [![Pylint](https://github.com/gtkcyber/compact_prompt/actions/workflows/pylint.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/pylint.yml)
-[![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
-[![PyPI status](https://img.shields.io/pypi/status/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
+[![Documentation Status](https://readthedocs.org/projects/compactprompt/badge/?version=latest)](https://compactprompt.readthedocs.io/en/latest/)
 
+**CompactPrompt makes the text you send to an AI shorter — without losing the
+meaning — so it costs less, runs faster, and fits inside the AI's size limit.**
 
-Easy-to-use **prompt & data compression** for LLM workflows — a clean, faithful
-implementation of the four strategies from
-[*CompactPrompt: A Unified Pipeline for Prompt and Data Compression in LLM
-Workflows*](https://arxiv.org/abs/2510.18043) (Choi et al., 2025).
+You don't need to be an AI expert to use it. The simplest version is one line of
+Python.
 
-The headline call is one line:
+---
+
+## What problem does this solve?
+
+When you use an AI model (like ChatGPT or Claude), you send it text — a
+**prompt** — and it sends text back. Two things matter:
+
+- **AI models charge by the amount of text.** The unit they count is called a
+  **token** (roughly ¾ of a word). More text = more money and slower replies.
+- **Every model has a size limit** (a "context window"). Very long prompts
+  simply don't fit.
+
+So if your prompt is long — full of instructions, documents, tables, and
+examples — you pay more, wait longer, and can hit the limit.
+
+**CompactPrompt shrinks the prompt while keeping what matters.** Think of it like
+packing a suitcase more efficiently: the same clothes, less space.
+
+### A few words you'll see
+
+| Word | What it means |
+|------|---------------|
+| **Prompt** | The text you send to an AI model. |
+| **Token** | The chunk of text AI models count and charge for (~¾ of a word). |
+| **LLM** | "Large Language Model" — the AI that reads your prompt (e.g. Claude, GPT). |
+| **Lossless** | Can be reversed perfectly back to the original. |
+| **Lossy** | Saves more space, but some wording is gone for good. |
+
+---
+
+## Try it in 30 seconds
+
+Install it:
+
+```bash
+pip install compactprompt
+```
+
+Shrink a prompt:
 
 ```python
 from compactprompt import CompactPrompt
 
-result = CompactPrompt.compact("Please could you very kindly go ahead and provide "
-                              "a really concise summary of the quarterly report.")
+result = CompactPrompt.compact(
+    "Please could you very kindly go ahead and provide a really concise "
+    "summary of the quarterly report."
+)
 
-print(result.text)            # the compressed prompt
-print(f"{result.ratio:.2f}x smaller "
-      f"({result.tokens_before} -> {result.tokens_after} tokens)")
+print(result.text)     # the shorter version
+print(f"{result.ratio:.1f}x smaller "
+      f"({result.tokens_before} → {result.tokens_after} tokens)")
 ```
+
+Output:
 
 ```
 a really concise summary of the quarterly report.
-1.7x smaller (22 -> 13 tokens)
+1.7x smaller (22 → 13 tokens)
 ```
 
-## Why
+That's it. The wording you didn't need ("Please could you very kindly go ahead
+and") is gone; the meaning stays.
 
-Long, data-rich prompts are expensive and bump into context limits.
-`compactprompt` shrinks them while preserving meaning, using four complementary
-techniques from the paper.
+> **Want to see it without writing code?** There's a [point-and-click demo
+> app](#point-and-click-demo) below.
 
-## Install
+---
 
-The core (hard-prompt pruning + n-gram abbreviation) has **no required
-dependencies** — `CompactPrompt.compact()` works on a clean Python install.
-Heavy libraries are imported lazily, only when a strategy needs them. Install
-just the extras you want:
+## What it can do
 
-```bash
-pip install compactprompt                  # core
-pip install 'compactprompt[freq]'          # better static scores (wordfreq)
-pip install 'compactprompt[dynamic]'       # context-aware scoring (torch + transformers)
-pip install 'compactprompt[phrases]'       # grammar-preserving pruning (spaCy)
-pip install 'compactprompt[ml]'            # k-means quantization + exemplar selection
-pip install 'compactprompt[embeddings]'    # semantic embeddings (all-mpnet-base-v2)
-pip install 'compactprompt[llmlingua]'     # LLMLingua as an alternative pruning engine
-pip install 'compactprompt[caveman]'       # caveman LLM-based compression engine
-pip install 'compactprompt[all]'           # everything, faithful to the paper
-```
+CompactPrompt offers several ways to make a prompt smaller. You can use them on
+their own or together. Each one is explained in plain language first, with a
+short "how it works" note for the curious.
 
-For phrase-level pruning also download a spaCy model once:
+### 1. Trim the wording (hard prompt pruning)
 
-```bash
-python -m spacy download en_core_web_sm
-```
-
-## Interactive demo
-
-A tiny Streamlit app lets you paste a prompt and watch it compact in real time,
-with live token-savings metrics:
-
-```bash
-pip install 'compactprompt[app]'
-streamlit run streamlit_app.py
-```
-
-The sidebar toggles each strategy (pruning aggressiveness, phrase preservation,
-context-aware scoring, reversible abbreviation, fidelity measurement); controls
-for unavailable optional dependencies are disabled with a hint to install them.
-
-## The four strategies
-
-### 1. Hard Prompt Compression (lossy)
-
-Drops low-information words/phrases, scored with hybrid **static** (corpus
-rarity, `-log2 p(t)`) and **dynamic** (context surprisal, `-log2 P_model(t|c)`)
-self-information, fused with the paper's Δ=0.1 rule. Phrases are pruned as units
-(via spaCy dependency parsing) to keep grammar intact, and named entities /
-numbers are protected.
+Removes low-value words — filler like *"please could you kindly go ahead and"* —
+and keeps the words that carry the meaning. This is **lossy** (the removed words
+are gone), but the result is ready to use as-is.
 
 ```python
 from compactprompt import CompactPrompt
 
-# Target removing ~40% of tokens
-r = CompactPrompt.compact(prompt, ratio=0.4)
+# Aim to cut about 40% of the tokens
+result = CompactPrompt.compact(prompt, ratio=0.4)
 
-# Or pin an absolute token budget
-r = CompactPrompt.compact(prompt, budget=64)
+# ...or aim for a specific size
+result = CompactPrompt.compact(prompt, budget=64)   # ~64 tokens
 ```
 
-Context-aware scoring is **pluggable**. Use the bundled offline model, or supply
-your own scorer (any `text -> [(token, start, end, bits), ...]` callable):
+<details>
+<summary>How it works (technical)</summary>
 
-```python
-from compactprompt import CompactPrompt, LocalLMScorer
+Each word gets an "information score" combining how rare it is in general
+(static self-information) and how surprising it is in context (dynamic
+self-information from a small language model). Low-scoring words are dropped.
+Whole grammatical phrases are removed together (using spaCy) so the result stays
+readable, and names/numbers are protected. This follows the *CompactPrompt*
+paper's Δ=0.1 fusion rule.
+</details>
 
-r = CompactPrompt.compact(prompt, scorer=LocalLMScorer("gpt2"))   # offline, no API key
-```
+### 2. Shorten repeated phrases — reversibly (n-gram abbreviation)
 
-#### Swappable pruning engine: built-in or LLMLingua
-
-The pruning engine is pluggable. As well as the built-in self-information
-pruner, you can prune with Microsoft's
-[LLMLingua](https://github.com/microsoft/LLMLingua) (a mature, perplexity-based
-compressor) — it slots in as a drop-in engine:
-
-```python
-from compactprompt import CompactPrompt
-
-# Shortcut: use LLMLingua with sensible defaults (LLMLingua-2, CPU)
-r = CompactPrompt.compact(prompt, engine="llmlingua")   # needs the [llmlingua] extra
-
-# Or configure it explicitly and reuse the loaded model across prompts
-from compactprompt.llmlingua import LLMLinguaCompressor
-
-pruner = LLMLinguaCompressor(device_map="cuda")          # pick model / device
-r = CompactPrompt.compact(prompt, pruner=pruner)
-```
-
-`ratio` and `budget` map onto LLMLingua's `rate`/`target_token`, and the result
-is the same `CompactResult`, so the rest of your code is unchanged. Any object
-exposing `compress(text, ratio=, budget=) -> HardPromptResult` works as an
-engine — see the [comparison of the engines](#pruning-engines-built-in-llmlingua-caveman)
-below.
-
-A third engine, **caveman**, takes a different approach: it asks an LLM to
-rewrite prose into terse "caveman speak" while preserving code, URLs, and
-headings verbatim (validated, with a fix-retry loop). It's a port of the
-[Caveman](https://github.com/JuliusBrussee/caveman) `caveman-compress` skill,
-with a pluggable LLM:
-
-```python
-from compactprompt import CompactPrompt
-from compactprompt.caveman import CavemanCompressor
-
-# Bring any LLM: a callable that takes a prompt string and returns a string.
-r = CompactPrompt.compact(prompt, pruner=CavemanCompressor(llm=my_llm))
-
-# Shortcut (default LLM = Anthropic SDK if ANTHROPIC_API_KEY is set, else `claude` CLI):
-r = CompactPrompt.compact(prompt, engine="caveman")    # needs the [caveman] extra
-```
-
-Because it rewrites rather than drops tokens, `ratio`/`budget` are ignored by
-the caveman engine.
-
-### 2. Textual N-gram Abbreviation (lossless / reversible)
-
-Replaces frequent multi-word patterns with short, token-cheap placeholders, and
-guarantees an exact round trip. A token-savings guard ensures the output is
-never longer than the input.
+If a phrase repeats a lot, it's replaced with a short placeholder, and a
+"legend" remembers what each placeholder means. This is **lossless** — you can
+restore the exact original at any time.
 
 ```python
 import compactprompt as cp
 
 doc = "operating cash flow rose. operating cash flow fell. operating cash flow held."
 abbr = cp.abbreviate(doc, n=3)
-print(abbr.text)          # '@0 rose. @0 fell. @0 held.'
-print(abbr.dictionary)    # {'@0': 'operating cash flow'}
-assert abbr.restore() == doc
+
+print(abbr.text)        # '@0 rose. @0 fell. @0 held.'
+print(abbr.dictionary)  # {'@0': 'operating cash flow'}
+print(abbr.restore())   # back to the exact original
 ```
 
-Keep `abbr.dictionary` as a legend so the downstream model (or you) can expand it.
-Enable it inside the pipeline with `CompactPrompt.compact(text, abbreviate=True)`.
+Keep `abbr.dictionary` so you (or the AI) can expand the placeholders later.
 
-### 3. Numerical Quantization (bounded-error)
+### 3. Round numbers safely (numeric quantization)
 
-Lowers the precision of numeric columns to save tokens, within a guaranteed
-error bound.
+Big tables of numbers take up a lot of tokens. This rounds them to save space,
+while guaranteeing the rounding never exceeds a known limit.
 
 ```python
 import compactprompt as cp
 
-q = cp.quantize([1.0, 2.5, 3.3, 4.8, 9.2, 10.0], method="uniform", bits=8)
-q.reconstruct()    # approx originals
-q.max_error        # epsilon_max bound
-
-q = cp.quantize(values, method="kmeans", k=16)   # needs the `ml` extra
-
-# Or a whole DataFrame:
-new_df, results = cp.quantize_dataframe(df, bits=8)
+q = cp.quantize([1.0, 2.5, 3.3, 4.8, 9.2, 10.0], bits=8)
+q.reconstruct()   # the rounded-back numbers
+q.max_error       # the guaranteed maximum rounding error
 ```
 
-### 4. Representative Example Selection (few-shot)
+### 4. Pick the best examples (few-shot selection)
 
-Picks a small, diverse set of exemplars by embedding candidates
-(`all-mpnet-base-v2`), running k-means for `k ∈ [5, 50]`, choosing `k*` by
-maximum silhouette score, and keeping the point nearest each centroid.
+AI works better when you show it a few examples. If you have *hundreds* of
+candidate examples, this chooses a small, varied handful that still covers the
+range — so you send a few instead of all of them.
 
 ```python
-from compactprompt import select_examples   # needs `embeddings` + `ml`
+from compactprompt import select_examples
 
-sel = select_examples(candidate_texts, k_range=(5, 50))
-few_shot = sel.examples       # the chosen prototypes
-sel.k_star                    # selected number of clusters
+chosen = select_examples(my_examples)
+chosen.examples   # the handful to actually send
 ```
 
-## Pruning engines: built-in, LLMLingua, caveman
+---
 
-All three reduce prompt text, but differently — and any of them slots into
-`CompactPrompt.compact(engine=...)` or `pruner=`:
+## Choosing how the trimming is done (engines)
 
-| | Built-in | LLMLingua | caveman |
-|---|---|---|---|
-| Method | Static+dynamic self-information (Δ=0.1) + phrase pruning | Perplexity / token-classification (LLMLingua-2) | LLM rewrites prose into terse "caveman" style |
-| Needs | Zero-dep core; LM scorer optional | Downloads a compressor model | An LLM (pluggable; Anthropic/`claude` by default) |
-| Strengths | Grammar-preserving, lightweight, pluggable scorer | Mature, benchmarked, query-aware | Highest prose reduction; preserves code/URLs/headings (validated) |
-| Token target | `ratio`/`budget` honored | `ratio`/`budget` honored | rewrites to its own degree (`ratio`/`budget` ignored) |
-| Reversible | No (use n-gram abbreviation) | No | No |
+Step 1 (trimming the wording) can be done three different ways. They all make
+text shorter; they differ in *how* they decide what to cut and what you need
+installed. You pick one with `engine="..."` — the rest of your code is identical.
 
-They compose: pick whichever engine fits the prose, and still use this
-library's reversible n-gram abbreviation, numeric quantization, and few-shot
-selection on the data-heavy parts.
-
-## Measuring fidelity
+| Engine | In plain terms | Needs |
+|--------|----------------|-------|
+| **Built-in** (default) | Scores each word and drops the least useful. Fast, runs on your machine. | Nothing extra |
+| **LLMLingua** | Microsoft's well-tested tool that uses a small AI to decide what to cut. | Downloads a model |
+| **Caveman** | Asks an AI to *rewrite* your text in a terse style, keeping code, links, and headings intact. | Access to an AI (see below) |
 
 ```python
-from compactprompt import cosine_fidelity    # needs `embeddings`
+# Use the default — nothing to install:
+CompactPrompt.compact(prompt)
 
-f = cosine_fidelity(original_text, result.text)
-print(f.mean, f.p5)   # mean and worst-case (5th pct) cosine similarity
+# Use LLMLingua instead:
+CompactPrompt.compact(prompt, engine="llmlingua")   # pip install 'compactprompt[llmlingua]'
+
+# Use Caveman:
+CompactPrompt.compact(prompt, engine="caveman")     # pip install 'compactprompt[caveman]'
 ```
 
-## The result object
+The built-in engine and CompactPrompt's other features come from the
+[*CompactPrompt* research paper](https://arxiv.org/abs/2510.18043). LLMLingua and
+Caveman are excellent open-source tools that this library plugs in for you (see
+[Attribution](#attribution)).
 
-`CompactPrompt.compact(...)` returns a `CompactResult`:
+---
 
-| attribute | meaning |
-|---|---|
-| `.text` | the compressed prompt (also `str(result)`) |
-| `.original` | the input |
-| `.tokens_before` / `.tokens_after` | token counts (tiktoken if available) |
-| `.ratio` | `tokens_before / tokens_after` (e.g. 2.3x) |
-| `.savings` | fraction of tokens removed, `[0, 1]` |
-| `.dictionary` | reversible n-gram map (when `abbreviate=True`) |
-| `.restore()` | reverse the lossless abbreviation step |
-| `.steps` / `.stats` | which strategies ran, with diagnostics |
+## Installing the extra features
 
-## All `compact()` options
+The basic install works with no setup. Some features need extra pieces — install
+only the ones you want:
+
+```bash
+pip install compactprompt                  # core (trimming + reversible abbreviation)
+pip install 'compactprompt[ml]'            # number rounding + example selection
+pip install 'compactprompt[llmlingua]'     # the LLMLingua engine
+pip install 'compactprompt[caveman]'       # the Caveman engine
+pip install 'compactprompt[app]'           # the point-and-click demo app
+pip install 'compactprompt[all]'           # everything
+```
+
+If a feature needs something you haven't installed, CompactPrompt tells you
+exactly what to run.
+
+---
+
+## Point-and-click demo
+
+Prefer not to write code? A small web app lets you paste a prompt and watch it
+shrink, with the savings shown live:
+
+```bash
+pip install 'compactprompt[app]'
+streamlit run streamlit_app.py
+```
+
+It opens in your browser. Use the sidebar to choose an engine and how much to
+trim.
+
+---
+
+## Checking the meaning was kept
+
+Worried a shorter prompt changed the meaning? You can measure how similar the
+"before" and "after" are (1.0 = identical meaning):
+
+```python
+from compactprompt import cosine_fidelity   # needs: pip install 'compactprompt[embeddings]'
+
+score = cosine_fidelity(original_text, result.text)
+print(score.mean)   # e.g. 0.85
+```
+
+---
+
+## Reference
+
+### What `compact()` gives you back
+
+`CompactPrompt.compact(...)` returns a result object:
+
+| Attribute | Meaning |
+|-----------|---------|
+| `.text` | The shortened prompt. |
+| `.original` | What you put in. |
+| `.tokens_before` / `.tokens_after` | Size before and after. |
+| `.ratio` | How many times smaller (e.g. `2.3` = 2.3× smaller). |
+| `.savings` | Fraction of tokens saved (e.g. `0.4` = 40%). |
+| `.dictionary` | The legend for restoring abbreviations (if used). |
+| `.restore()` | Undo the reversible abbreviation step. |
+
+### Main options
 
 ```python
 CompactPrompt.compact(
     prompt,
-    ratio=0.5,             # fraction of tokens to remove via pruning (ignored if budget set)
-    budget=None,           # absolute target token count
-    prune=True,            # hard-prompt pruning (lossy, usable as-is)
-    abbreviate=False,      # also apply reversible n-gram abbreviation
-    ngram=2,               # n-gram length (paper's best: 2)
-    top_k=100,             # number of frequent n-grams to abbreviate
-    scorer=None,           # pluggable dynamic self-information scorer
-    static=None,           # static self-information scorer (default: best available)
-    delta_threshold=0.1,   # static/dynamic fusion threshold (paper default)
-    use_phrases=True,      # grammar-preserving phrase pruning (needs spaCy)
-    spacy_model="en_core_web_sm",
+    ratio=0.5,          # how much to cut: 0.5 = aim to remove ~half the tokens
+    budget=None,        # OR aim for a specific token count
+    prune=True,         # trim the wording (on by default)
+    abbreviate=False,   # also shorten repeated phrases (reversible)
+    engine="builtin",   # "builtin", "llmlingua", or "caveman"
 )
 ```
 
-Reuse an instance to amortize an expensive scorer/model across many prompts:
+Full details — including the advanced options — are in the
+[documentation](https://compactprompt.readthedocs.io/).
 
-```python
-cp = CompactPrompt(scorer=LocalLMScorer("gpt2"))
-cp.run(prompt_a)
-cp.run(prompt_b)
-```
+---
 
-## Tests
+## For developers
+
+### Run the tests
 
 ```bash
 pip install pytest
 pytest
 ```
 
-The suite runs on the zero-dependency core; embedding/clustering tests skip
-automatically when their optional dependencies are absent.
+The test suite runs on the no-dependency core; tests for optional features skip
+themselves automatically when those pieces aren't installed.
+
+### Build the docs locally
+
+```bash
+pip install 'compactprompt[docs]'
+mkdocs serve     # then open http://127.0.0.1:8000
+```
+
+---
 
 ## Citation
+
+This library implements the methodology from:
 
 ```bibtex
 @article{choi2025compactprompt,
@@ -290,12 +305,13 @@ automatically when their optional dependencies are absent.
 }
 ```
 
-This is an independent implementation of the methodology; it is not affiliated
-with the paper's authors.
+It is an independent implementation and is not affiliated with the paper's
+authors.
 
 ## Attribution
 
-The caveman engine (`compactprompt/caveman.py`) is ported from
-[Caveman](https://github.com/JuliusBrussee/caveman) by Julius Brussee (MIT).
-Full third-party attributions and license notices are in
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+The Caveman engine (`compactprompt/caveman.py`) is adapted from
+[Caveman](https://github.com/JuliusBrussee/caveman) by Julius Brussee (MIT). The
+LLMLingua engine uses [LLMLingua](https://github.com/microsoft/LLMLingua) by
+Microsoft (MIT). Full third-party attributions and license notices are in
+[`THIRD_PARTY_NOTICES.md`](https://github.com/gtkcyber/compact_prompt/blob/main/THIRD_PARTY_NOTICES.md).
