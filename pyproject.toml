@@ -55,6 +55,10 @@ dev = ["pytest>=7.4"]
 [project.urls]
 "Paper" = "https://arxiv.org/abs/2510.18043"
 
+[tool.setuptools]
+# Ship the project license plus third-party attributions in the distribution.
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+
 [tool.setuptools.packages.find]
 include = ["compactprompt*"]
 

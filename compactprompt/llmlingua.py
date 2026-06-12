@@ -28,7 +28,6 @@ from __future__ import annotations
 from typing import Optional
 
 from .hard_prompt import HardPromptResult
-from .tokens import count_tokens
 
 # A small, CPU-friendly LLMLingua-2 model. The LLMLingua v1 default
 # (Llama-2-7B on CUDA) is far heavier and won't run on most machines.
@@ -123,9 +122,4 @@ class LLMLinguaCompressor:
         else:  # some versions return the string directly
             compressed = str(result)
 
-        return HardPromptResult(
-            original=text,
-            compressed=compressed,
-            tokens_before=count_tokens(text),
-            tokens_after=count_tokens(compressed),
-        )
+        return HardPromptResult.from_texts(text, compressed)

@@ -38,7 +38,6 @@ from collections import Counter
 from typing import Callable, List, Optional, Tuple
 
 from .hard_prompt import HardPromptResult
-from .tokens import count_tokens
 
 # A pluggable LLM is any callable: prompt -> completion text.
 LLM = Callable[[str], str]
@@ -257,7 +256,7 @@ class CavemanCompressor:
         """
         del ratio, budget  # not used by caveman
         if not text.strip():
-            return HardPromptResult(text, text, count_tokens(text), count_tokens(text))
+            return HardPromptResult.from_texts(text, text)
 
         llm = self._get_llm()
         frontmatter, body = _split_frontmatter(text)
@@ -278,9 +277,4 @@ class CavemanCompressor:
             )
 
         compressed = frontmatter + compressed_body
-        return HardPromptResult(
-            original=text,
-            compressed=compressed,
-            tokens_before=count_tokens(text),
-            tokens_after=count_tokens(compressed),
-        )
+        return HardPromptResult.from_texts(text, compressed)

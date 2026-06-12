@@ -289,3 +289,10 @@ automatically when their optional dependencies are absent.
 
 This is an independent implementation of the methodology; it is not affiliated
 with the paper's authors.
+
+## Attribution
+
+The caveman engine (`compactprompt/caveman.py`) is ported from
+[Caveman](https://github.com/JuliusBrussee/caveman) by Julius Brussee (MIT).
+Full third-party attributions and license notices are in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

@@ -52,6 +52,23 @@ class HardPromptResult:
     tokens_after: int
     removed_units: List[str] = field(default_factory=list)
 
+    @classmethod
+    def from_texts(
+        cls, original: str, compressed: str, removed_units: Optional[List[str]] = None
+    ) -> "HardPromptResult":
+        """Build a result, counting tokens of both strings with ``count_tokens``.
+
+        Pruning engines should use this so token counts always come from this
+        library's tokenizer (not a backend's), keeping ratios comparable.
+        """
+        return cls(
+            original=original,
+            compressed=compressed,
+            tokens_before=count_tokens(original),
+            tokens_after=count_tokens(compressed),
+            removed_units=removed_units or [],
+        )
+
     @property
     def ratio(self) -> float:
         """Compression ratio ``tokens_before / tokens_after`` (e.g. 2.3x)."""
