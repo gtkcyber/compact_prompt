@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# Least-privilege default: these jobs only need to read the repository.
+permissions:
+  contents: read
+
 jobs:
   # Fast job: verify the zero-dependency core works on a clean install across
   # every supported Python version. The embedding/clustering tests skip

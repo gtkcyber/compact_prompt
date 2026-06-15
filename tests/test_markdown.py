@@ -68,5 +68,5 @@ def test_validate_structure_flags_changed_code():
 
 
 def test_extract_helpers():
-    assert "https://example.com" in extract_urls(DOC)
+    assert extract_urls(DOC) == {"https://example.com"}
     assert len(extract_code_blocks(DOC)) == 1

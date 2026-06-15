@@ -14,7 +14,7 @@ from compactprompt.files import (
     is_sensitive_path,
     review_file,
 )
-from compactprompt.markdown import validate_structure
+from compactprompt.markdown import extract_urls, validate_structure
 
 SKILL = """\
 ---
@@ -90,7 +90,7 @@ def test_structure_preserved_or_skipped(tmp_path):
     res = compact_file(p, engine="builtin", ratio=0.5)
     if not res.skipped:
         assert not validate_structure(SKILL, res.compressed)
-        assert "https://example.com/docs" in res.compressed
+        assert extract_urls(res.compressed) == extract_urls(SKILL)
         assert "x = compute(value)" in res.compressed
 
 
@@ -158,7 +158,7 @@ x = compute(value)
     assert res.applied and not res.skipped
     assert res.tokens_after < res.tokens_before
     assert p.read_text().startswith("---\nname: example\n")  # frontmatter kept
-    assert "https://example.com/docs" in p.read_text()
+    assert extract_urls(p.read_text()) == extract_urls(SKILL)  # url preserved
 
 
 def test_caveman_revert_when_structure_breaks(tmp_path):
