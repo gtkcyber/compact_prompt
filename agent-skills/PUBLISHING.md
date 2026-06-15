@@ -15,30 +15,32 @@ After that, anyone can `pip install 'compactprompt[mcp]'` to get the
 `compactprompt-mcp` command. Keep the `version` fields in `server.json` (below)
 in sync with the released version.
 
-## 2. The official MCP Registry
+## 2. The official MCP Registry — automated
 
-The canonical place for MCP servers is the official registry
-(<https://registry.modelcontextprotocol.io>). The repo root ships a
-[`server.json`](../server.json) manifest. Publish it with the official tool:
+The canonical registry (<https://registry.modelcontextprotocol.io>) is published
+to **automatically** by the `publish-mcp-registry` job in
+`.github/workflows/publish.yml`, on the same version-tag push that releases to
+PyPI. It uses GitHub OIDC (no secret/account setup needed), syncs
+[`server.json`](../server.json)'s version to the tag, and runs `mcp-publisher`.
+
+How ownership is proven (already wired up):
+
+- **GitHub OIDC** grants the `io.github.gtkcyber/*` namespace automatically — the
+  server name in `server.json` is `io.github.gtkcyber/compactprompt`.
+- **PyPI package ownership** is verified by the marker
+  `<!-- mcp-name: io.github.gtkcyber/compactprompt -->` in the project README
+  (which becomes the PyPI description). The registry job runs *after* the PyPI
+  upload so the package exists when it checks.
+
+To release to both PyPI and the registry, just push a tag:
 
 ```bash
-# install the publisher CLI (see the registry docs for the latest method)
-mcp-publisher login github          # authenticates the io.github.gtkcyber/* namespace
-mcp-publisher publish               # validates and publishes ./server.json
+git tag v0.5.0 && git push origin v0.5.0
 ```
 
-Notes before submitting:
-
-- **Validate first.** The registry schema evolves — confirm the `$schema` URL in
-  `server.json` is current, and let `mcp-publisher` validate it; it will flag any
-  missing/renamed fields.
-- The manifest declares the PyPI package and a `stdio` transport. Clients run the
-  `compactprompt-mcp` console script (installed with the `[mcp]` extra); confirm
-  your client invokes that command. The per-tool config snippets are in
-  [`README.md`](README.md).
-
-Once listed, several third-party directories crawl the official registry
-automatically.
+The registry is in preview, so if the job fails, check the run log; you can also
+run `mcp-publisher` locally against `server.json` to debug. Once listed, several
+third-party directories crawl the official registry automatically.
 
 ## 3. Community directories
 

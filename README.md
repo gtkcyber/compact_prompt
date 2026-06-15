@@ -245,6 +245,8 @@ The [`agent-skills/`](agent-skills/) directory also has lightweight skill/rules
 files and an `install.sh` for the same tools. See its
 [README](agent-skills/README.md) for per-tool configuration.
 
+<!-- mcp-name: io.github.gtkcyber/compactprompt -->
+
 ## Confirming the meaning is preserved
 
 To check that a shortened prompt still means the same thing, you can measure the
