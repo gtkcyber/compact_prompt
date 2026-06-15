@@ -7,13 +7,16 @@ records the required attributions and license notices.
 
 ## 1. Caveman — ported source code
 
-`compactprompt/caveman.py` is a **port and adaptation** of the
+`compactprompt/caveman.py`, `compactprompt/markdown.py`, and
+`compactprompt/files.py` contain **ports and adaptations** of the
 `caveman-compress` skill from the **Caveman** project. The structure-preservation
 validators (fenced-code / inline-code / URL / heading extraction), the
-frontmatter and outer-fence handling, the LLM compression/fix prompts, and the
-validate-and-fix-retry flow are derived from Caveman's source. The code was
-adapted to operate on strings, to use a pluggable LLM callable, and to conform
-to this library's pruning-engine interface.
+frontmatter and outer-fence handling, the LLM compression/fix prompts, the
+validate-and-fix-retry flow, the natural-language file detection
+(`detect.py`), and the sensitive-path refusal (`is_sensitive_path`) are derived
+from Caveman's source. The code was adapted to operate on strings, to use a
+pluggable LLM callable, and to conform to this library's pruning-engine and
+file-layer interfaces.
 
 - Project: Caveman
 - Author: Julius Brussee

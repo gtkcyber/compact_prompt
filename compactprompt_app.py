@@ -2,7 +2,7 @@
 
 Run with:
     pip install -e '.[app]'        # or: pip install streamlit
-    streamlit run streamlit_app.py
+    streamlit run compactprompt_app.py
 
 Enter a prompt, pick how aggressively to compact it, and see the compressed
 result and token savings side by side.
@@ -21,6 +21,25 @@ EXAMPLE = (
     "of the quarterly financial report that was prepared for the board of "
     "directors, focusing primarily on revenue and net income for this period."
 )
+
+SKILL_EXAMPLE = """\
+---
+name: example-skill
+description: An example skill used to demonstrate file compaction
+---
+# Example Skill
+
+Please could you very kindly go ahead and make sure that you read the
+configuration first. The configuration file controls the behavior. The
+configuration file is important and the configuration file must always exist.
+
+See https://example.com/docs for the full details, and run `make build` to
+compile the project before you begin.
+
+```bash
+echo "structure like this code block is always preserved"
+```
+"""
 
 
 def have(module: str) -> bool:
@@ -180,6 +199,15 @@ def main() -> None:
     )
 
     opts = sidebar()
+    tab_prompt, tab_files = st.tabs(["Prompt", "Files & Skills"])
+    with tab_prompt:
+        prompt_tab(opts)
+    with tab_files:
+        files_tab(opts)
+
+
+def prompt_tab(opts: dict) -> None:
+    """Compact a single pasted prompt."""
     prompt = st.text_area("Prompt", value=EXAMPLE, height=160)
     if not st.button("Compact prompt", type="primary", disabled=not prompt.strip()):
         return
@@ -220,6 +248,63 @@ def main() -> None:
         )
     st.caption(f"Engine: **{engine}**")
     show_results(result, opts["show_fidelity"])
+
+
+def files_tab(opts: dict) -> None:
+    """Review and compact a markdown file / skill (paste its contents)."""
+    import tempfile
+    from pathlib import Path
+
+    from compactprompt import compact_file, review_file
+
+    engine = {"Built-in": "builtin", "LLMLingua": "llmlingua", "Caveman": "caveman"}[
+        opts["engine"]
+    ]
+    st.write(
+        "Paste a markdown file or `SKILL.md`. It is **reviewed**, then **compacted** "
+        "with the engine selected in the sidebar — frontmatter, code, and links are "
+        "preserved, and a result that would break structure is rejected."
+    )
+    text = st.text_area("Markdown", value=SKILL_EXAMPLE, height=260, key="files_md")
+    if not st.button("Review & compact", type="primary", disabled=not text.strip()):
+        return
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "INPUT.md"
+        path.write_text(text)
+
+        report = review_file(path)
+        st.subheader("Review")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Tokens", report.tokens)
+        c2.metric("Headings", report.n_headings)
+        c3.metric("Code blocks", report.n_code_blocks)
+        c4.metric("Frontmatter", report.frontmatter_tokens)
+        st.caption(
+            f"repetition ~{report.est_repetition_pct:.0%} · "
+            f"filler ~{report.est_filler_pct:.0%} · "
+            f"estimated savings ~{report.est_savings:.0%}"
+        )
+        for issue in report.issues:
+            st.write("• " + issue)
+
+        st.subheader(f"Compaction ({opts['engine']})")
+        try:
+            with st.spinner(f"Compacting with {opts['engine']}…"):
+                res = compact_file(path, engine=engine, ratio=opts["ratio"], apply=False)
+        except Exception as exc:  # pragma: no cover - surface config errors in UI
+            st.error(f"Compaction failed: {exc}")
+            return
+
+        if res.skipped:
+            st.warning(f"Skipped — {res.skip_reason}")
+            return
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Before", res.tokens_before)
+        m2.metric("After", res.tokens_after, delta=res.tokens_after - res.tokens_before)
+        m3.metric("Saved", f"{res.savings:.0%}")
+        st.text_area("Compacted result", value=res.compressed, height=260, key="files_out")
+        st.download_button("Download compacted .md", res.compressed, file_name="compacted.md")
 
 
 main()

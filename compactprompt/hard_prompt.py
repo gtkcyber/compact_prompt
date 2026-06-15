@@ -215,7 +215,7 @@ class HardPromptCompressor:
                 group = [tk for tk in toks[i:] if chunk_of.get(tk.i) == ci]
                 start = group[0].idx
                 end = group[-1].idx + len(group[-1].text)
-                scores = [score_of_tok[tk.i] for tk in group]
+                scores = [score_of_tok.get(tk.i, float("inf")) for tk in group]
                 is_protected = any(tk.i in protected for tk in group)
                 avg = float("inf") if is_protected else sum(scores) / len(scores)
                 is_word = any(not tk.is_punct for tk in group)

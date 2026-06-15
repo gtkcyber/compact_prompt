@@ -31,105 +31,18 @@ Usage::
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess
-from collections import Counter
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional
 
 from .hard_prompt import HardPromptResult
+from .markdown import split_frontmatter, strip_outer_fence, validate_structure
 
 # A pluggable LLM is any callable: prompt -> completion text.
 LLM = Callable[[str], str]
 
-# --- structure regexes (ported from caveman's validate.py / compress.py) -----
-_URL_RE = re.compile(r"https?://[^\s)]+")
-_FENCE_OPEN_RE = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
-_HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)", re.MULTILINE)
-_OUTER_FENCE_RE = re.compile(r"\A\s*(`{3,}|~{3,})[^\n]*\n(.*)\n\1\s*\Z", re.DOTALL)
-_FRONTMATTER_RE = re.compile(r"\A(---\r?\n.*?\r?\n---\r?\n)(.*)", re.DOTALL)
-
-
-# --- extractors --------------------------------------------------------------
-def _extract_headings(text: str) -> List[Tuple[str, str]]:
-    return [(lvl, title.strip()) for lvl, title in _HEADING_RE.findall(text)]
-
-
-def _extract_urls(text: str) -> set:
-    return set(_URL_RE.findall(text))
-
-
-def _extract_inline_codes(text: str) -> List[str]:
-    without = re.sub(r"^```[\s\S]*?^```", "", text, flags=re.MULTILINE)
-    without = re.sub(r"^~~~[\s\S]*?^~~~", "", without, flags=re.MULTILINE)
-    return re.findall(r"`([^`]+)`", without)
-
-
-def _extract_code_blocks(text: str) -> List[str]:
-    """Line-based fenced code-block extractor (handles ``` and ~~~, any length)."""
-    blocks: List[str] = []
-    lines = text.split("\n")
-    i, n = 0, len(lines)
-    while i < n:
-        m = _FENCE_OPEN_RE.match(lines[i])
-        if not m:
-            i += 1
-            continue
-        fence_char, fence_len = m.group(2)[0], len(m.group(2))
-        block_lines = [lines[i]]
-        i += 1
-        closed = False
-        while i < n:
-            close = _FENCE_OPEN_RE.match(lines[i])
-            if (
-                close
-                and close.group(2)[0] == fence_char
-                and len(close.group(2)) >= fence_len
-                and close.group(3).strip() == ""
-            ):
-                block_lines.append(lines[i])
-                closed = True
-                i += 1
-                break
-            block_lines.append(lines[i])
-            i += 1
-        if closed:
-            blocks.append("\n".join(block_lines))
-    return blocks
-
-
-def validate_structure(original: str, compressed: str) -> List[str]:
-    """Return a list of structure-preservation errors (empty == valid).
-
-    Mirrors caveman's hard checks: headings, fenced code blocks, URLs and
-    inline code must be preserved exactly. Paths/bullets are warnings in the
-    original and are not enforced here.
-    """
-    errors: List[str] = []
-    h1, h2 = _extract_headings(original), _extract_headings(compressed)
-    if len(h1) != len(h2):
-        errors.append(f"Heading count mismatch: {len(h1)} vs {len(h2)}")
-    if _extract_code_blocks(original) != _extract_code_blocks(compressed):
-        errors.append("Code blocks not preserved exactly")
-    u1, u2 = _extract_urls(original), _extract_urls(compressed)
-    if u1 != u2:
-        errors.append(f"URL mismatch: lost={u1 - u2}, added={u2 - u1}")
-    c1, c2 = Counter(_extract_inline_codes(original)), Counter(_extract_inline_codes(compressed))
-    if c1 != c2:
-        lost = {k for k in c1 if c2.get(k, 0) < c1[k]}
-        if lost:
-            errors.append(f"Inline code lost: {lost}")
-    return errors
-
-
-def _split_frontmatter(text: str) -> Tuple[str, str]:
-    m = _FRONTMATTER_RE.match(text)
-    return (m.group(1), m.group(2)) if m else ("", text)
-
-
-def _strip_outer_fence(text: str) -> str:
-    m = _OUTER_FENCE_RE.match(text)
-    return m.group(2) if m else text
+# Re-exported so existing imports (compactprompt.caveman.validate_structure) work.
+__all__ = ["CavemanCompressor", "default_anthropic_llm", "validate_structure", "LLM"]
 
 
 # --- prompts (adapted from caveman's compress.py) ----------------------------
@@ -190,7 +103,7 @@ def default_anthropic_llm(model: Optional[str] = None) -> LLM:
                     max_tokens=8192,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return _strip_outer_fence(msg.content[0].text.strip())
+                return strip_outer_fence(msg.content[0].text.strip())
             except ImportError:
                 pass  # fall back to CLI
         claude_bin = shutil.which("claude")
@@ -209,7 +122,7 @@ def default_anthropic_llm(model: Optional[str] = None) -> LLM:
             encoding="utf-8",
             errors="replace",
         )
-        return _strip_outer_fence(result.stdout.strip())
+        return strip_outer_fence(result.stdout.strip())
 
     return call
 
@@ -259,14 +172,14 @@ class CavemanCompressor:
             return HardPromptResult.from_texts(text, text)
 
         llm = self._get_llm()
-        frontmatter, body = _split_frontmatter(text)
+        frontmatter, body = split_frontmatter(text)
 
-        compressed_body = _strip_outer_fence(llm(_compress_prompt(body)).strip())
+        compressed_body = strip_outer_fence(llm(_compress_prompt(body)).strip())
         errors = validate_structure(body, compressed_body)
         for _ in range(self.max_retries):
             if not errors:
                 break
-            compressed_body = _strip_outer_fence(
+            compressed_body = strip_outer_fence(
                 llm(_fix_prompt(body, compressed_body, errors)).strip()
             )
             errors = validate_structure(body, compressed_body)

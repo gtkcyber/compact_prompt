@@ -18,8 +18,8 @@ pytest tests/test_ngram.py                  # one file
 pytest tests/test_ngram.py::test_round_trip_is_lossless   # one test
 pytest -rs                                  # show skip reasons
 
-# Lint (CI gate; must stay at 10.00/10)
-pylint compactprompt tests examples
+# Lint (CI gate; must stay at 10.00/10). CI runs over all tracked Python files:
+pylint $(git ls-files '*.py')
 
 # Install for development
 pip install -e .                            # zero-dep core only
@@ -28,6 +28,17 @@ python -m spacy download en_core_web_sm     # needed for phrase-level pruning
 
 # Runnable tour of every strategy
 python examples/quickstart.py
+
+# CLI: review / compact markdown files and Claude Code skills (entry point in cli.py)
+compactprompt review ./skills
+compactprompt compact FILE.md --engine builtin            # dry run
+compactprompt compact FILE.md --engine caveman --apply    # writes + .bak
+
+# Interactive demo (Prompt + Files & Skills tabs)
+streamlit run compactprompt_app.py
+
+# Build the docs site (MkDocs); CI/Read the Docs build must stay clean
+pip install -e '.[docs]' && mkdocs build --strict
 ```
 
 CI runs two workflows (`.github/workflows/`): `pylint.yml` and `tests.yml`. The
@@ -57,7 +68,24 @@ The four strategies map to modules:
 
 Supporting modules: `scoring.py` (static + dynamic self-information and the
 fusion rule), `embedding.py` (shared lazy `all-mpnet-base-v2` loader),
-`fidelity.py` (cosine-similarity metric), `tokens.py` (token counting).
+`fidelity.py` (cosine-similarity metric), `tokens.py` (token counting),
+`markdown.py` (shared structure helpers — frontmatter split, `validate_structure`,
+`prose_segments`; `caveman.py` imports these rather than redefining them).
+
+### File & skill layer
+
+`files.py` compacts markdown files and Claude Code skills (`SKILL.md`) on top of
+the string engines, and `cli.py` (entry point `compactprompt`, also `python -m
+compactprompt`) wraps it. Two operations:
+
+- **Review** (`review_file` / `review_directory`) — a read-only report (tokens,
+  headings, frontmatter size, repetition %, filler %, est. savings, issues).
+- **Compact** (`compact_file` / `compact_directory`) — delegates body compaction
+  to `CompactPrompt.compact(engine=...)`; `engine` is a **required keyword (no
+  default)** by design. Dry run unless `apply=True`.
+
+The Streamlit demo (`compactprompt_app.py`) exposes both the prompt flow and a
+**Files & Skills** tab.
 
 ### Design invariants — read before changing behavior
 
@@ -108,6 +136,16 @@ non-obvious:
    count (subword merging makes the estimate approximate). Protected units
    (entities/numbers, `score == inf`) are appended last and only pruned as a
    last resort when a tight budget can't otherwise be met.
+
+6. **File compaction is validate-or-revert** (`files.py`). A file is never
+   corrupted: YAML frontmatter is preserved verbatim, fenced code blocks are not
+   fed to lossy engines, and after compaction `validate_structure` checks that
+   headings/code/URLs/inline-code survived — if not, the original is kept and the
+   file is reported as skipped. Nothing is written unless `apply=True`, which
+   first writes a verified `.bak`. Sensitive/code/config files are skipped up
+   front. Because lossy engines (builtin/llmlingua) often trip this on
+   inline-structure-heavy markdown, **caveman is the recommended engine for
+   human-readable files** — which is why there is no default engine.
 
 ### Faithfulness to the paper
 

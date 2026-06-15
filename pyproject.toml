@@ -30,7 +30,7 @@ ml = ["numpy>=1.24", "scikit-learn>=1.3"]
 embeddings = ["sentence-transformers>=2.2"]
 # Precise token counting that matches the OpenAI/Anthropic tokenizers.
 tokenizer = ["tiktoken>=0.5"]
-# The interactive Streamlit demo (streamlit_app.py).
+# The interactive Streamlit demo (compactprompt_app.py).
 app = ["streamlit>=1.30", "tiktoken>=0.5"]
 # LLMLingua as an alternative perplexity-based pruning engine.
 llmlingua = ["llmlingua>=0.2"]
@@ -57,6 +57,9 @@ docs = [
     "mkdocstrings[python]>=0.24",
     "mkdocs-include-markdown-plugin>=6.0",
 ]
+
+[project.scripts]
+compactprompt = "compactprompt.cli:main"
 
 [project.urls]
 "Paper" = "https://arxiv.org/abs/2510.18043"
@@ -112,6 +115,7 @@ disable = [
     "too-many-positional-arguments",
     "too-many-locals",
     "too-few-public-methods",
+    "too-many-instance-attributes",
     # Tests are self-describing; docstrings add noise without value there.
     "missing-function-docstring",
 ]

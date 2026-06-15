@@ -14,6 +14,7 @@ import pytest
 from compactprompt import CavemanCompressor, CompactPrompt
 from compactprompt.caveman import validate_structure
 from compactprompt.hard_prompt import HardPromptResult
+from compactprompt.markdown import extract_urls
 
 DOC = (
     "# Title\n\n"
@@ -77,7 +78,7 @@ def test_fix_retry_recovers():
 
     res = CavemanCompressor(llm=flaky_llm, max_retries=2).compress(DOC)
     assert calls["n"] == 2  # one compress + one fix
-    assert "https://example.com/docs" in res.compressed
+    assert extract_urls(res.compressed) == extract_urls(DOC)
 
 
 def test_raises_if_structure_unrecoverable():
