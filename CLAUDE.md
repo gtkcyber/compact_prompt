@@ -70,11 +70,6 @@ Key facts:
   rehearsal. Trusted Publishing must be configured on PyPI for the project (the
   `pypi` / `testpypi` environments and the `publish.yml` publisher).
 
-The `alias/compact-prompt/` directory is a separate shim package published under
-the PyPI name `compact-prompt` so that `pip install compact-prompt` /
-`compact_prompt` also install `compactprompt`. It is published manually via the
-`publish-alias.yml` workflow (Actions -> Run workflow) and rarely needs updating.
-
 ## Architecture
 
 The central abstraction is `CompactPrompt` (`pipeline.py`), a facade whose
