@@ -112,6 +112,18 @@ compactprompt`) wraps it. Two operations:
 The Streamlit demo (`compactprompt_app.py`) exposes both the prompt flow and a
 **Files & Skills** tab.
 
+### AI-agent integration
+
+`mcp_server.py` (entry point `compactprompt-mcp`, `[mcp]` extra) is an MCP server
+exposing `review` / `compact` / `compact_prompt` / `count_tokens` tools. It is
+the single, reusable integration point — it wraps the library API directly
+rather than reimplementing anything, and is *not* imported by `__init__` (so the
+zero-dep core is preserved). The `agent-skills/` directory holds the canonical
+`INSTRUCTIONS.md` plus an `install.sh` that *generates* each tool's skill/rules
+file (Claude Code `SKILL.md`, Codex `AGENTS.md`, Cursor `.mdc`, Gemini
+`GEMINI.md`) from that one source — edit `INSTRUCTIONS.md` and re-run, never the
+generated files.
+
 ### Design invariants — read before changing behavior
 
 These are deliberate decisions; several tests encode them and several are

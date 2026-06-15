@@ -36,6 +36,8 @@ app = ["streamlit>=1.30", "tiktoken>=0.5"]
 llmlingua = ["llmlingua>=0.2"]
 # Caveman LLM-based compression engine (default LLM caller uses the Anthropic SDK).
 caveman = ["anthropic>=0.39"]
+# MCP server (compactprompt-mcp) exposing review/compact tools to AI agents.
+mcp = ["mcp>=1.2"]
 # Everything, for a faithful reproduction of the paper.
 all = [
     "wordfreq>=3.0",
@@ -60,6 +62,7 @@ docs = [
 
 [project.scripts]
 compactprompt = "compactprompt.cli:main"
+compactprompt-mcp = "compactprompt.mcp_server:main"
 
 [project.urls]
 "Paper" = "https://arxiv.org/abs/2510.18043"
@@ -98,6 +101,7 @@ ignored-modules = [
     "streamlit",
     "llmlingua",
     "anthropic",
+    "mcp",
 ]
 
 [tool.pylint.basic]
