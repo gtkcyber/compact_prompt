@@ -45,6 +45,31 @@ CI runs two workflows (`.github/workflows/`): `pylint.yml` and `tests.yml`. The
 `tests.yml` **core** job installs the package with no extras across Python
 3.9–3.13; the **full** job installs `.[all,dev]` + the spaCy model.
 
+## Releasing
+
+Publishing to PyPI is driven entirely by **version tags** — push a tag and
+`publish.yml` builds and uploads via PyPI Trusted Publishing (OIDC, no tokens):
+
+```bash
+git tag v0.5.0
+git push origin v0.5.0        # triggers publish.yml -> PyPI
+```
+
+Key facts:
+
+- The version is derived from the tag by **setuptools-scm** (`v0.5.0` -> `0.5.0`);
+  there is nothing to bump in `pyproject.toml`.
+- The tag must sit on a commit whose `publish.yml` has the `on: push: tags`
+  trigger (i.e. current `main`/`master`), and the build uses the workflow file
+  *as it exists at that tagged commit*.
+- **Versions must strictly increase** — PyPI permanently rejects re-uploading an
+  existing version. Don't reuse or move a tag that already published.
+- Don't point two tags at the same commit; setuptools-scm then can't tell which
+  version to build.
+- `workflow_dispatch` on `publish.yml` publishes to **TestPyPI** instead, for a
+  rehearsal. Trusted Publishing must be configured on PyPI for the project (the
+  `pypi` / `testpypi` environments and the `publish.yml` publisher).
+
 ## Architecture
 
 The central abstraction is `CompactPrompt` (`pipeline.py`), a facade whose
