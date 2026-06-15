@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.gtkcyber/compactprompt",
+  "description": "Review and compact prompts, markdown docs, and AI-agent skills to save tokens, preserving code and structure.",
+  "repository": {
+    "url": "https://github.com/gtkcyber/compact_prompt",
+    "source": "github"
+  },
+  "version": "0.5.0",
+  "websiteUrl": "https://compact-prompt.readthedocs.io/",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "compactprompt",
+      "version": "0.5.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

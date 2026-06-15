@@ -209,6 +209,7 @@ pip install compactprompt                  # core: trimming and reversible short
 pip install 'compactprompt[ml]'            # numeric reduction and example selection
 pip install 'compactprompt[llmlingua]'     # the LLMLingua engine
 pip install 'compactprompt[caveman]'       # the Caveman engine
+pip install 'compactprompt[mcp]'           # the MCP server for AI agents
 pip install 'compactprompt[app]'           # the interactive application
 pip install 'compactprompt[all]'           # everything
 ```
@@ -228,6 +229,21 @@ streamlit run compactprompt_app.py
 
 It opens in the browser. Use the sidebar to choose an engine and set how much to
 remove.
+
+## Use it from an AI agent
+
+CompactPrompt ships an **MCP server** so AI coding tools (Claude Code, Codex,
+Cursor, Gemini, and any MCP-capable agent) can review and compact prompts, docs,
+and skills directly:
+
+```bash
+pip install 'compactprompt[mcp]'      # provides the `compactprompt-mcp` command
+claude mcp add compactprompt -- compactprompt-mcp   # e.g. for Claude Code
+```
+
+The [`agent-skills/`](agent-skills/) directory also has lightweight skill/rules
+files and an `install.sh` for the same tools. See its
+[README](agent-skills/README.md) for per-tool configuration.
 
 ## Confirming the meaning is preserved
 
