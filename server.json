@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.gtkcyber/compactprompt",
   "title": "CompactPrompt",
-  "description": "Review and compact prompts, markdown docs, and AI-agent skills to save tokens, preserving code and structure.",
+  "description": "Review and compact prompts, docs, and AI-agent skills to save tokens, preserving structure.",
   "repository": {
     "url": "https://github.com/gtkcyber/compact_prompt",
     "source": "github"
