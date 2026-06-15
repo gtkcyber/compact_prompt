@@ -84,3 +84,9 @@ tool's file is regenerated from it.
 
 See the top-level [project docs](https://compact-prompt.readthedocs.io/) for the
 engines (`builtin` / `llmlingua` / `caveman`) and the full safety model.
+
+## Publishing
+
+To list the MCP server in the official registry and community directories, see
+[`PUBLISHING.md`](PUBLISHING.md). The repo ships a [`server.json`](../server.json)
+manifest for the [official MCP Registry](https://registry.modelcontextprotocol.io).
