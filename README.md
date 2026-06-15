@@ -3,6 +3,8 @@
 [![Tests](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/tests.yml)
 [![Pylint](https://github.com/gtkcyber/compact_prompt/actions/workflows/pylint.yml/badge.svg)](https://github.com/gtkcyber/compact_prompt/actions/workflows/pylint.yml)
 [![Documentation Status](https://readthedocs.org/projects/compact-prompt/badge/?version=latest)](https://compact-prompt.readthedocs.io/en/latest/)
+![PyPI - Version](https://img.shields.io/pypi/v/:packageName)
+
 
 CompactPrompt shortens the text you send to an AI model while preserving its
 meaning. The result costs less to run, returns faster, and is less likely to
