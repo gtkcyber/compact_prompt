@@ -1,7 +1,7 @@
 name: Publish to PyPI
 
-# Publishes the package when you cut a GitHub Release. Uses PyPI Trusted
-# Publishing (OIDC) — no API tokens or secrets to manage.
+# Publishes the package when you push a version tag (e.g. v0.4.0). Uses PyPI
+# Trusted Publishing (OIDC) — no API tokens or secrets to manage.
 #
 # ONE-TIME SETUP (https://docs.pypi.org/trusted-publishers/):
 #   1. Register the project name on PyPI (or let the first trusted-publish
@@ -14,14 +14,17 @@ name: Publish to PyPI
 #   3. In this GitHub repo → Settings → Environments, create an environment
 #      named "pypi" (optionally add required reviewers to gate releases).
 #
-# To release:  bump `version` in pyproject.toml, commit, then create a GitHub
-# Release whose tag matches (e.g. v0.1.0). PyPI rejects re-uploads of an
-# existing version, so always bump first.
+# To release:  push a version tag, e.g.
+#     git tag v0.4.0 && git push origin v0.4.0
+# setuptools-scm derives the package version from the tag (v0.4.0 -> 0.4.0), so
+# there is nothing to bump by hand. PyPI rejects re-uploading an existing
+# version, so every release needs a new, higher tag.
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch:        # allow manual TestPyPI dry-runs (see publish-testpypi)
+  push:
+    tags:
+      - "v*"           # any version tag publishes to PyPI
+  workflow_dispatch:   # manual run publishes to TestPyPI (see publish-testpypi)
 
 permissions:
   contents: read
@@ -60,8 +63,8 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    # Only the real Release event publishes to PyPI.
-    if: github.event_name == 'release'
+    # A pushed version tag publishes to PyPI.
+    if: github.event_name == 'push'
     environment:
       name: pypi
       url: https://pypi.org/p/compactprompt
