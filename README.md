@@ -155,6 +155,48 @@ The built-in engine and the other core features implement the
 Caveman are independent open-source tools that this library integrates; see
 [Attribution](#attribution).
 
+## Compacting files and skills
+
+CompactPrompt can also compact whole markdown files — documentation,
+`CLAUDE.md`, notes, and Claude Code **skills** (`SKILL.md`) — not just strings.
+It can first **review** a file or folder to report where the savings are.
+
+This works safely by design: YAML frontmatter is preserved exactly, fenced code
+blocks and links are never altered, the result is rejected if it would change a
+heading, code block, or URL, and nothing is written without `--apply` (which
+first saves a `.bak` backup). Files that look like code, config, or secrets are
+skipped automatically.
+
+From the command line:
+
+```bash
+# See where the savings are (read-only)
+compactprompt review ./skills
+
+# Preview the compaction of one skill (writes nothing)
+compactprompt compact ./skills/my-skill/SKILL.md --engine builtin
+
+# Apply it (saves SKILL.md.bak, then rewrites the file)
+compactprompt compact ./skills/my-skill/SKILL.md --engine caveman --apply
+```
+
+`--engine` is required — you choose `builtin`, `llmlingua`, or `caveman` each
+time (caveman, which rewrites prose, is usually best for human-readable files).
+
+From Python:
+
+```python
+from compactprompt import review_file, compact_file
+
+report = review_file("SKILL.md")
+print(report.tokens, report.issues)
+
+result = compact_file("SKILL.md", engine="caveman", apply=True)
+print(result.tokens_before, "->", result.tokens_after)
+```
+
+The Streamlit app's **Files & Skills** tab does the same interactively.
+
 ## Optional features
 
 The basic installation requires no setup. Additional features depend on extra
@@ -179,7 +221,7 @@ savings reported as you go:
 
 ```bash
 pip install 'compactprompt[app]'
-streamlit run streamlit_app.py
+streamlit run compactprompt_app.py
 ```
 
 It opens in the browser. Use the sidebar to choose an engine and set how much to

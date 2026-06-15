@@ -31,8 +31,17 @@ from .embedding import get_embedder
 from .examples import SelectionResult, select_examples
 from .fidelity import FidelityResult, cosine_fidelity
 from .caveman import CavemanCompressor
+from .files import (
+    FileResult,
+    ReviewReport,
+    compact_directory,
+    compact_file,
+    review_directory,
+    review_file,
+)
 from .hard_prompt import HardPromptCompressor, HardPromptResult
 from .llmlingua import LLMLinguaCompressor
+from .markdown import split_frontmatter, validate_structure
 from .ngram import Abbreviation, NgramAbbreviator
 from .pipeline import CompactPrompt, CompactResult
 from .quantize import (
@@ -95,6 +104,15 @@ __all__ = [
     "quantize_kmeans",
     "quantize_dataframe",
     "QuantizedColumn",
+    # files & skills
+    "compact_file",
+    "compact_directory",
+    "review_file",
+    "review_directory",
+    "FileResult",
+    "ReviewReport",
+    "split_frontmatter",
+    "validate_structure",
     # exemplar selection
     "select_examples",
     "SelectionResult",

@@ -50,4 +50,9 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Getting started: getting-started.md
+  - Strategies: strategies.md
+  - Engines: engines.md
+  - Files & skills: files-and-skills.md
+  - FAQ: faq.md
   - API reference: api-reference.md

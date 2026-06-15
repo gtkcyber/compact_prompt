@@ -55,6 +55,20 @@ the [Home page](index.md) and its examples first.
 
 ::: compactprompt.FidelityResult
 
+## Files and skills
+
+::: compactprompt.review_file
+
+::: compactprompt.review_directory
+
+::: compactprompt.compact_file
+
+::: compactprompt.compact_directory
+
+::: compactprompt.ReviewReport
+
+::: compactprompt.FileResult
+
 ## Alternative pruning engines
 
 ::: compactprompt.LLMLinguaCompressor
