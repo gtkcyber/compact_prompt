@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "compactprompt"
 dynamic = ["version"]                # version is derived from git tags by setuptools-scm
-description = "Easy-to-use prompt & data compression for LLM workflows (CompactPrompt, Choi et al. 2025, arXiv:2510.18043)."
+description = "Easy-to-use prompt & data compression for LLM workflows."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
