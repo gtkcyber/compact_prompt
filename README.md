@@ -5,7 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/compact-prompt/badge/?version=latest)](https://compact-prompt.readthedocs.io/en/latest/)
 ![PyPI - Version](https://img.shields.io/pypi/v/compactprompt)
 [![gtkcyber/compact_prompt MCP server](https://glama.ai/mcp/servers/gtkcyber/compact_prompt/badges/score.svg)](https://glama.ai/mcp/servers/gtkcyber/compact_prompt)
-
+[![CompactPrompt MCP on mcprush](https://mcprush.com/badge/compactprompt-mcp/score.svg)](https://mcprush.com/to/compactprompt-mcp?ref=badge)
 
 CompactPrompt shortens the text you send to an AI model while preserving its
 meaning. The result costs less to run, returns faster, and is less likely to
